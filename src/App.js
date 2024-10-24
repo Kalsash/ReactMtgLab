@@ -35,32 +35,6 @@ const App = () => {
   const updateStats = () => {
     const newColorData = [...colorData];
     const newManaData = [...manaData];
-
-    for (const card of Object.values(deck)) {
-      // Update color data
-      (card.colors || []).forEach(color => {
-        const colorIndex = newColorData.findIndex(item => item.color === color);
-        if (colorIndex !== -1) {
-          newColorData[colorIndex].count += card.count;
-        }
-      });
-      if (!card.colors) {
-        newColorData[0].count += card.count; // NoColor
-      }
-
-      // Update mana data
-      if (card.manaCost) {
-        const manaCost = parseInt(card.manaCost, 10);
-        if (!isNaN(manaCost)) {
-          if (manaCost < 7) {
-            newManaData[manaCost].count += card.count;
-          } else {
-            newManaData[newManaData.length - 1].count += card.count; // 7+
-          }
-        }
-      }
-    }
-
     setColorData(newColorData);
     setManaData(newManaData);
   };
@@ -101,7 +75,7 @@ const App = () => {
       setDeck(prevDeck => {
         const newDeck = { ...prevDeck };
         if (newDeck[card.name]) {
-          newDeck[card.name].count += 1;
+          newDeck[card.name].count += 0.5;
         } else {
           newDeck[card.name] = { ...card, count: 1 };
         }
@@ -126,43 +100,60 @@ const App = () => {
         } else {
           manaData[card.cmc].count++;
         }
+        
 
         updateStats(); // Обновляем статистику
         
         return newDeck;
       });
+      setSearchTerm('');
+      setCards([]); 
       setSelectedCard(null); // Сбрасываем выбранную карту
     }
   };
 
-  const removeFromDeck = (cardKey) => {
-    setDeck(prevDeck => {
-      const newDeck = { ...prevDeck };
-      if (newDeck[cardKey]) {
-        const card = newDeck[cardKey];
+const removeFromDeck = (cardKey) => {
+  setDeck(prevDeck => {
+    const newDeck = { ...prevDeck };
+    
+    if (newDeck[cardKey]) {
+      const card = newDeck[cardKey];
+
+      // Обновляем данные цвета
+      if (card.colors) {
         card.colors.forEach(color => {
           const colorIndex = colorData.findIndex(item => item.color === color);
           if (colorIndex !== -1) {
+            // Уменьшаем количество для этого цвета
             colorData[colorIndex].count--;
           }
         });
-        if (card.cmc >= 7) {
-          manaData[7].count--;
-        } else {
-          manaData[card.cmc].count--;
-        }
-
-        newDeck[cardKey].count -= 1;
-
-        if (newDeck[cardKey].count <= 0) {
-          delete newDeck[cardKey];
-        }
-
-        updateStats();
+      } else {
+        // Если карты без цвета, увеличиваем счетчик NoColor
+        colorData[0].count--;
       }
-      return newDeck;
-    });
-  };
+
+      // Обновляем данные маны
+      if (card.cmc >= 7) {
+        manaData[7].count--;
+      } else {
+        manaData[card.cmc].count--;
+      }
+      
+      // Уменьшаем количество карт в колоде
+      newDeck[cardKey].count -= 0.5;
+
+      if (newDeck[cardKey].count <= 0) {
+        delete newDeck[cardKey];
+      }
+
+      // Обновляем статистику (например, с помощью функции updateStats)
+      updateStats();
+    }
+    
+    return newDeck;
+  });
+};
 
   return (
     <div>
